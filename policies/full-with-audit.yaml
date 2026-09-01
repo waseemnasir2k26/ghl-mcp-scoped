@@ -1,0 +1,79 @@
+# full-with-audit.yaml
+#
+# The loosest of the three, and the one to think hardest about. Mode is
+# denylist: anything not named here is allowed, including tools the wrapped
+# server gains in a future release. Use it when an operator is driving the
+# agent live and wants the full toolset with a paper trail and a few hard
+# stops - not for an unattended loop.
+#
+# loc_EXAMPLE_CLIENT_A / loc_EXAMPLE_CLIENT_B are placeholders.
+
+version: 1
+name: full-with-audit
+description: Full toolset, minus money and outbound messaging, every call logged.
+
+mode: denylist
+read_only: false
+
+tools:
+  - id: no-payments
+    match: "payments_*"
+    action: deny
+    reason: transactions and orders are never agent-writable
+
+  - id: human-sends-messages
+    match: "conversations_send-a-new-message"
+    action: confirm
+    reason: >-
+      an outbound SMS or email reaches a real person and cannot be recalled;
+      a human sends it
+
+  - id: human-moves-money-stages
+    match: "opportunities_update-opportunity"
+    action: confirm
+    reason: pipeline stage changes drive billing and reporting downstream
+
+  # Contact writes are allowed, but only into the two locations this engagement
+  # covers, and never with a raw dnd/ownership override in the payload.
+  - id: contact-writes-scoped
+    match: "contacts_upsert-contact"
+    action: allow
+    when:
+      - arg: locationId
+        in: ["loc_EXAMPLE_CLIENT_A", "loc_EXAMPLE_CLIENT_B"]
+      - arg: dndSettings
+        forbidden: true
+    otherwise: deny
+    reason: upserts are fine inside the engagement's own locations
+
+  - id: contact-update-scoped
+    match: "contacts_update-contact"
+    action: allow
+    when:
+      - arg: locationId
+        in: ["loc_EXAMPLE_CLIENT_A", "loc_EXAMPLE_CLIENT_B"]
+        optional: true
+    otherwise: deny
+
+  - id: tags-must-be-namespaced
+    match: "contacts_add-tags"
+    action: allow
+    when:
+      - arg: tags.0
+        matches: "^agent:"
+    otherwise: deny
+    reason: >-
+      the agent may only apply tags in its own agent: namespace so its work can
+      be found and undone
+
+audit:
+  path: ./audit/full-with-audit.jsonl
+  log_arguments: true
+  redact_keys: "token|secret|key|password|phone|email|address|dob"
+  max_string_length: 500
+
+visibility:
+  hide_denied: true
+  # Confirm tools stay listed here so the agent can tell the operator what it
+  # would like a human to run. It still cannot call them.
+  hide_confirm: false

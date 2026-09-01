@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ghl-mcp-scoped"
+version = "0.1.0"
+description = "Least-privilege policy wrapper for any GoHighLevel MCP server: declare which tools an agent may call, refuse the rest, log every decision."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Waseem Nasir", email = "hello@skynetjoe.com" }]
+keywords = [
+  "mcp",
+  "model-context-protocol",
+  "gohighlevel",
+  "least-privilege",
+  "policy",
+  "allowlist",
+  "audit-log",
+  "agent-security",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/skynetlabs/ghl-mcp-scoped"
+Issues = "https://github.com/skynetlabs/ghl-mcp-scoped/issues"
+
+[project.scripts]
+ghl-mcp-scoped = "ghl_mcp_scoped.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ghl_mcp_scoped"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "ghl_mcp_scoped",
+  "policies",
+  "examples",
+  "tests",
+  "README.md",
+  "LICENSE",
+  "TOPICS.txt",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

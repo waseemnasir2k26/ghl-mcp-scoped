@@ -1,0 +1,33 @@
+# read-only.yaml
+#
+# The policy to hand an agent that is meant to ANSWER QUESTIONS about a
+# GoHighLevel location and change nothing: reporting, lookups, "what is the
+# state of this pipeline", drafting copy from real data.
+#
+# Nothing here depends on the tool list of any particular GHL MCP server. The
+# read_only cap is applied by NAME before any rule is consulted, so a tool the
+# wrapped server adds next month is denied unless its name carries a read verb.
+
+version: 1
+name: read-only
+description: Every read tool, no writes, full audit trail.
+
+mode: allowlist
+read_only: true
+
+# A tool is a "read" tool when one of these words appears as a token in its
+# name (split on any non-alphanumeric character). contacts_get-contacts ->
+# get, contacts. Add "count" or "export" here if your server uses them.
+read_verbs: [get, list, search, fetch]
+
+tools:
+  # Under read_only the wildcard cannot grant a write; it only says "any read
+  # tool this server exposes is fine".
+  - match: "*"
+    action: allow
+    reason: read-only session; all reads permitted, all writes capped by read_only
+
+audit:
+  path: ./audit/read-only.jsonl
+  log_arguments: true
+  redact_keys: "token|secret|key|password|phone|email"

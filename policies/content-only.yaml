@@ -1,0 +1,90 @@
+# content-only.yaml
+#
+# The policy for a content agent: it writes blog posts and schedules social
+# posts for ONE location, and cannot touch the CRM. Contacts, conversations,
+# opportunities and payments are not listed, and the mode is allowlist, so they
+# are denied and never appear in tools/list.
+#
+# Replace the location id below with your own. loc_EXAMPLE_CLIENT_A is a
+# placeholder, not a real GoHighLevel location.
+
+version: 1
+name: content-only
+description: Blogs and social posting for one location. No CRM, no payments.
+
+mode: allowlist
+read_only: false
+
+tools:
+  # --- reads the writer needs to do its job -----------------------------
+  - match: "blogs_get-*"
+    action: allow
+    reason: reading existing posts, authors and categories is harmless
+
+  - match: "blogs_check-url-slug-exists"
+    action: allow
+    reason: slug collision check before publishing
+
+  - match: "locations_get-*"
+    action: allow
+    reason: needs custom field and location metadata to write on-brand
+
+  - match: "social-media-posting_get-*"
+    action: allow
+    reason: reads the connected accounts and existing posts
+
+  # --- writes, each pinned to one location ------------------------------
+  - id: blog-write-one-location
+    match: "blogs_create-blog-post"
+    action: allow
+    when:
+      - arg: locationId
+        in: ["loc_EXAMPLE_CLIENT_A"]
+      - arg: title
+        required: true
+    otherwise: deny
+    reason: may publish blog posts, but only into the one location it works on
+
+  - id: blog-update-one-location
+    match: "blogs_update-blog-post"
+    action: allow
+    when:
+      - arg: locationId
+        in: ["loc_EXAMPLE_CLIENT_A"]
+    otherwise: deny
+
+  - id: social-create-one-location
+    match: "social-media-posting_create-post"
+    action: allow
+    when:
+      - arg: locationId
+        in: ["loc_EXAMPLE_CLIENT_A"]
+      # A social post that names a contact is a CRM leak wearing a content hat.
+      - arg: contactId
+        forbidden: true
+    otherwise: deny
+    reason: may schedule social posts for its own location only
+
+  # --- explicit stop signs ----------------------------------------------
+  # Redundant under allowlist, but they make the intent readable in an audit
+  # and give the refusal a named rule instead of "default:allowlist".
+  - id: no-crm
+    match: "contacts_*"
+    action: deny
+    reason: a content agent has no business reading or writing the CRM
+
+  - id: no-conversations
+    match: "conversations_*"
+    action: deny
+    reason: this agent must never message a real person
+
+  - id: no-payments
+    match: "payments_*"
+    action: deny
+    reason: financial records are out of scope
+
+audit:
+  path: ./audit/content-only.jsonl
+  log_arguments: true
+  redact_keys: "token|secret|key|password|phone|email"
+  max_string_length: 300

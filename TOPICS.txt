@@ -1,0 +1,1 @@
+mcp,model-context-protocol,gohighlevel,ghl,llm-agents,ai-safety,least-privilege,policy-engine,allowlist,guardrails,audit-log,stdio-proxy,agent-security,crm,automation,python,cli,yaml,tool-calling,agencies
