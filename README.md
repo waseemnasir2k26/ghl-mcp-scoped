@@ -2,6 +2,10 @@
 
 A least-privilege policy wrapper that sits in front of any GoHighLevel MCP server: you declare which tools an AI agent may call and under what conditions, and the wrapper enforces it, logs every call, and refuses the rest.
 
+## Status
+
+Last reviewed: September 2026 · release v2026.09
+
 ```text
 $ ghl-mcp-scoped run --policy policies/content-only.yaml -- <your ghl mcp server>
 
